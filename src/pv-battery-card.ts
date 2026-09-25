@@ -2,7 +2,18 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant, PvBatteryCardConfig } from './types';
 import { renderBatteryGauge, BATTERY_GAUGE_VIEW_WIDTH, BATTERY_GAUGE_VIEW_HEIGHT } from './chart/battery-gauge';
+import { fetchSolarForecast, type ForecastPoint } from './data/forecast';
+import { fetchAverageBaseLoadKw } from './data/base-load';
+import { estimateFullTime } from './utils/charge-estimate';
+import { formatEstimatedTimeLabel } from './utils/format';
 import './pv-battery-card-editor';
+
+// Wie oft die Ladezeit-Prognose (Solarprognose + Grundlast-Mittelwert)
+// höchstens neu geholt wird. Häufiger nachzufragen brächte kaum bessere
+// Werte (Grundlast wird ohnehin über mehrere Stunden gemittelt), aber mehr
+// Websocket-Last – der 10-Minuten-Takt läuft einfach über die Zeitbucket im
+// Fetch-Key mit, jedes Mal wenn `hass` sich sowieso ändert.
+const FORECAST_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 
 const REQUIRED_FIELDS = [
   'soc_entity',
@@ -33,6 +44,10 @@ export class PvBatteryCard extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: PvBatteryCardConfig;
+  @state() private _forecast?: ForecastPoint[];
+  @state() private _baseLoadKw?: number;
+
+  private _forecastFetchKey?: string;
 
   public setConfig(config: PvBatteryCardConfig): void {
     const missing = REQUIRED_FIELDS.filter((key) => !config[key]);
@@ -40,6 +55,80 @@ export class PvBatteryCard extends LitElement {
       throw new Error(`Bitte folgende Felder in der Kartenkonfiguration angeben: ${missing.join(', ')}.`);
     }
     this._config = config;
+  }
+
+  protected willUpdate(): void {
+    if (!this.hass || !this._config) {
+      return;
+    }
+
+    const { pv_power_entity, grid_import_power_entity, grid_export_power_entity } = this._config;
+    if (!pv_power_entity || !grid_import_power_entity || !grid_export_power_entity) {
+      // Ladezeit-Prognose ohne die drei Leistungssensoren nicht möglich –
+      // Karte zeigt dann einfach nur SoC + Live-Leistung.
+      return;
+    }
+
+    const bucket = Math.floor(Date.now() / FORECAST_REFRESH_INTERVAL_MS);
+    const key = [
+      pv_power_entity,
+      grid_import_power_entity,
+      grid_export_power_entity,
+      this._config.charge_power_entity,
+      this._config.discharge_power_entity,
+      bucket,
+    ].join('|');
+
+    if (key !== this._forecastFetchKey) {
+      this._forecastFetchKey = key;
+      void this._fetchForecastData(
+        key,
+        pv_power_entity,
+        grid_import_power_entity,
+        grid_export_power_entity,
+        this._config.charge_power_entity,
+        this._config.discharge_power_entity,
+      );
+    }
+  }
+
+  private async _fetchForecastData(
+    key: string,
+    pvPowerEntity: string,
+    gridImportPowerEntity: string,
+    gridExportPowerEntity: string,
+    chargePowerEntity: string,
+    dischargePowerEntity: string,
+  ): Promise<void> {
+    if (!this.hass) {
+      return;
+    }
+
+    try {
+      const [forecast, baseLoadKw] = await Promise.all([
+        fetchSolarForecast(this.hass),
+        fetchAverageBaseLoadKw(
+          this.hass,
+          pvPowerEntity,
+          gridImportPowerEntity,
+          gridExportPowerEntity,
+          chargePowerEntity,
+          dischargePowerEntity,
+        ),
+      ]);
+
+      // Falls inzwischen die Config sich geändert hat, ist diese Antwort veraltet.
+      if (key !== this._forecastFetchKey) {
+        return;
+      }
+      this._forecast = forecast;
+      this._baseLoadKw = baseLoadKw;
+    } catch {
+      // Die Ladezeit-Prognose ist eine optionale Zusatzfunktion – ein Fehler
+      // hier (z. B. keine Forecast.Solar-Quelle konfiguriert) soll nicht die
+      // eigentliche SoC-/Leistungsanzeige überdecken, die Zeile bleibt
+      // einfach weg (analog zur Prognose-Fehlerbehandlung der Diagramm-Karte).
+    }
   }
 
   public getCardSize(): number {
@@ -81,6 +170,10 @@ export class PvBatteryCard extends LitElement {
     const hasPower = Number.isFinite(chargePower) && Number.isFinite(dischargePower);
     const netPower = chargePower - dischargePower;
 
+    const locale = this.hass.locale.language;
+    const timeZone = this.hass.config.time_zone;
+    const estimateLabel = hasSoc ? this._chargeEstimateLabel(soc, locale, timeZone) : undefined;
+
     return html`
       <ha-card>
         <div class="title">${this._config.title ?? 'Akkustand'}</div>
@@ -93,44 +186,59 @@ export class PvBatteryCard extends LitElement {
                 >
                   ${renderBatteryGauge(soc)}
                 </svg>
-                <div class="soc-value">${Math.round(soc)} %</div>
               </div>
-              ${hasPower
-                ? html`<div class="power-row">${renderPowerFlow(netPower, this.hass.locale.language)}</div>`
-                : ''}
+              ${hasPower ? html`<div class="power-row">${renderPowerFlow(netPower, locale)}</div>` : ''}
+              ${estimateLabel ? html`<div class="estimate-row">${estimateLabel}</div>` : ''}
             `
           : html`<div class="message">Keine Daten</div>`}
       </ha-card>
     `;
   }
 
+  /** Ladezeit-Text unterhalb der Leistungsanzeige, oder `undefined` falls (noch) nicht ermittelbar. */
+  private _chargeEstimateLabel(soc: number, locale: string, timeZone: string): string | undefined {
+    if (!this._config) {
+      return undefined;
+    }
+    if (soc >= 100) {
+      return 'Akku voll';
+    }
+    if (!this._forecast || this._baseLoadKw == null) {
+      return undefined;
+    }
+
+    const remainingKwh = (this._config.battery_capacity_kwh * (100 - soc)) / 100;
+    const estimate = estimateFullTime(remainingKwh, this._baseLoadKw, this._forecast, new Date());
+    if (!estimate) {
+      return 'Kein Aufladen mehr innerhalb der Prognose erwartet';
+    }
+    return `Voll ca. ${formatEstimatedTimeLabel(estimate, new Date(), locale, timeZone)}`;
+  }
+
   static styles = css`
     .title {
-      padding: 16px 16px 0;
+      padding: 12px 16px 0;
       font-size: 1.2rem;
       font-weight: 500;
       color: var(--primary-text-color);
+      text-align: center;
     }
     .battery-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 8px 16px 16px;
+      justify-content: center;
+      padding: 4px 16px;
     }
     .battery-icon {
-      width: 120px;
+      width: 160px;
       height: auto;
       flex-shrink: 0;
     }
-    .soc-value {
-      font-size: 1.8rem;
-      font-weight: 600;
-      color: var(--primary-text-color);
-    }
     .power-row {
-      padding: 0 16px 16px;
+      padding: 0 16px 2px;
       font-size: 0.95rem;
       color: var(--primary-text-color);
+      text-align: center;
     }
     .power-row .idle {
       color: var(--secondary-text-color);
@@ -139,9 +247,16 @@ export class PvBatteryCard extends LitElement {
       display: inline-block;
       font-weight: 700;
     }
+    .estimate-row {
+      padding: 0 16px 12px;
+      font-size: 0.9rem;
+      color: var(--secondary-text-color);
+      text-align: center;
+    }
     .message {
       padding: 8px 16px 16px;
       color: var(--secondary-text-color);
+      text-align: center;
     }
   `;
 }

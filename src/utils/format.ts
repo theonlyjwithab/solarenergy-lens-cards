@@ -1,6 +1,7 @@
 import type { Period } from '../types';
 import type { StatBar } from '../data/statistics';
 import type { DateRange } from './time';
+import { getZonedDayBounds } from './time';
 
 /** Formatiert den aktuell angezeigten Zeitraum für die Kopfzeile, z. B. "September 2026". */
 export function formatRangeLabel(period: Period, range: DateRange, locale: string, timeZone: string): string {
@@ -60,6 +61,23 @@ export function formatBarLabels(period: Period, bars: StatBar[], locale: string,
       return bars.map((bar) => monthFormat.format(bar.start));
     }
   }
+}
+
+/**
+ * Formatiert einen geschätzten Zeitpunkt (z. B. "voll ca. um") – nur Uhrzeit,
+ * falls er noch in den heutigen Kalendertag fällt, sonst zusätzlich der
+ * Wochentag (z. B. falls die Prognose bis in die Nacht/den nächsten Tag reicht).
+ */
+export function formatEstimatedTimeLabel(date: Date, now: Date, locale: string, timeZone: string): string {
+  const today = getZonedDayBounds(now, timeZone);
+  const timeFormat = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone });
+
+  if (date >= today.start && date < today.end) {
+    return `${timeFormat.format(date)} Uhr`;
+  }
+
+  const weekdayFormat = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone });
+  return `${weekdayFormat.format(date)}, ${timeFormat.format(date)} Uhr`;
 }
 
 /** Volle Beschreibung eines einzelnen Balkens für den Tooltip, z. B. "12:00 – 13:00". */

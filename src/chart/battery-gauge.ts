@@ -41,6 +41,16 @@ export function renderBatteryGauge(soc: number): SVGTemplateResult {
   const innerHeight = outlineHeight - padding * 2;
   const fillWidth = (clamped / 100) * innerMaxWidth;
 
+  const centerX = outlineX + outlineWidth / 2;
+  const centerY = outlineY + outlineHeight / 2;
+  const label = `${Math.round(clamped)} %`;
+  // Pille hinter der Zahl statt Text direkt auf dem Füllbalken: sitzt die
+  // Zahl teils auf gefülltem, teils auf leerem Bereich, wäre der Kontrast
+  // sonst nicht garantiert (gleiches Prinzip wie `renderFlowLabel` in
+  // chart/energy-flow.ts).
+  const labelWidth = Math.max(34, label.length * 7 + 10);
+  const labelHeight = 18;
+
   return svg`
     <rect
       x=${outlineX} y=${outlineY} width=${outlineWidth} height=${outlineHeight} rx="8"
@@ -51,5 +61,13 @@ export function renderBatteryGauge(soc: number): SVGTemplateResult {
       fill="var(--secondary-text-color)"
     />
     <rect x=${innerX} y=${innerY} width=${fillWidth} height=${innerHeight} rx="4" fill=${socColor(clamped)} />
+    <rect
+      x=${centerX - labelWidth / 2} y=${centerY - labelHeight / 2} width=${labelWidth} height=${labelHeight} rx=${labelHeight / 2}
+      fill="var(--card-background-color, #1c1c1c)" opacity="0.85"
+    />
+    <text
+      x=${centerX} y=${centerY + 4} text-anchor="middle"
+      font-size="12" font-weight="700" fill="var(--primary-text-color)"
+    >${label}</text>
   `;
 }

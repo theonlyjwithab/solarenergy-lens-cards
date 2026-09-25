@@ -120,17 +120,17 @@ export function renderEnergyFlowContent(
   const segImport = (pctImport / 100) * RING_CIRCUMFERENCE;
 
   return svg`
-    <path d="M85,112 C85,155 82.5,165 82.5,214" fill="none" stroke="var(--pv-color)" stroke-width=${wCharge} opacity="0.88" stroke-linecap="round" />
+    <path d="M85,112 C85,155 77.5,165 77.5,214" fill="none" stroke="var(--pv-color)" stroke-width=${wCharge} opacity="0.88" stroke-linecap="round" />
     <path d="M160,112 C160,215 160,278 160,322" fill="none" stroke="var(--pv-color)" stroke-width=${wDirect} opacity="0.88" stroke-linecap="round" />
-    <path d="M235,112 C235,155 237.5,165 237.5,214" fill="none" stroke="var(--pv-color)" stroke-width=${wExport} opacity="0.88" stroke-linecap="round" />
-    <path d="M82.5,242 C82.5,290 120,322 160,322" fill="none" stroke="var(--speicher-color)" stroke-width=${wDischarge} opacity="0.9" stroke-linecap="round" />
-    <path d="M237.5,242 C237.5,290 200,322 160,322" fill="none" stroke="var(--netz-color)" stroke-width=${wImport} opacity="0.9" stroke-linecap="round" />
+    <path d="M235,112 C235,155 242.5,165 242.5,214" fill="none" stroke="var(--pv-color)" stroke-width=${wExport} opacity="0.88" stroke-linecap="round" />
+    <path d="M77.5,242 C77.5,290 120,322 160,322" fill="none" stroke="var(--speicher-color)" stroke-width=${wDischarge} opacity="0.9" stroke-linecap="round" />
+    <path d="M242.5,242 C242.5,290 200,322 160,322" fill="none" stroke="var(--netz-color)" stroke-width=${wImport} opacity="0.9" stroke-linecap="round" />
 
-    ${live?.flow.charge !== undefined ? renderFlowLabel(84, 161, live.format(live.flow.charge)) : ''}
+    ${live?.flow.charge !== undefined ? renderFlowLabel(82, 161, live.format(live.flow.charge)) : ''}
     ${live?.flow.direct !== undefined ? renderFlowLabel(160, 239, live.format(live.flow.direct)) : ''}
-    ${live?.flow.export !== undefined ? renderFlowLabel(236, 161, live.format(live.flow.export)) : ''}
-    ${live?.flow.discharge !== undefined ? renderFlowLabel(95, 286, live.format(live.flow.discharge)) : ''}
-    ${live?.flow.import !== undefined ? renderFlowLabel(225, 286, live.format(live.flow.import)) : ''}
+    ${live?.flow.export !== undefined ? renderFlowLabel(238, 161, live.format(live.flow.export)) : ''}
+    ${live?.flow.discharge !== undefined ? renderFlowLabel(90, 286, live.format(live.flow.discharge)) : ''}
+    ${live?.flow.import !== undefined ? renderFlowLabel(230, 286, live.format(live.flow.import)) : ''}
 
     <rect x="20" y="20" width="280" height="100" rx="8" fill="var(--efc-surface-color)" />
     <text x="34" y="44">
@@ -144,13 +144,13 @@ export function renderEnergyFlowContent(
     <text x="235" y="90" text-anchor="middle" class="efc-mini-name">eingespeist</text>
     <text x="235" y="104" text-anchor="middle" class="efc-mini-value">${formatValue(gridExport)}</text>
 
-    <rect x="20" y="200" width="125" height="56" rx="8" fill="var(--efc-surface-color)" />
+    <rect x="20" y="200" width="115" height="56" rx="8" fill="var(--efc-surface-color)" />
     <text x="32" y="222" class="efc-label">Speicher</text>
     <text x="32" y="240" class="efc-value">entladen ${formatValue(discharge)}</text>
 
-    <rect x="175" y="200" width="125" height="56" rx="8" fill="var(--efc-surface-color)" />
-    <text x="187" y="222" class="efc-label">Netz</text>
-    <text x="187" y="240" class="efc-value">bezogen ${formatValue(gridImport)}</text>
+    <rect x="185" y="200" width="115" height="56" rx="8" fill="var(--efc-surface-color)" />
+    <text x="197" y="222" class="efc-label">Netz</text>
+    <text x="197" y="240" class="efc-value">bezogen ${formatValue(gridImport)}</text>
 
     <rect x="50" y="302" width="220" height="296" rx="8" fill="var(--efc-surface-color)" />
     <g transform="translate(160,384) rotate(-90)">
