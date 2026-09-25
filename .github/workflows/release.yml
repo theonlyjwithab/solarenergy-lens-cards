@@ -1,0 +1,40 @@
+name: Release
+
+# Läuft bei jedem Tag "v*" (z. B. v1.0.0): baut die Karten und veröffentlicht
+# dist/solar-cards.js als Anhang eines GitHub-Release. HACS lädt diese Datei
+# genau von dort herunter, da sie (bewusst, siehe .gitignore) nicht im
+# Repository selbst eingecheckt wird.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: GitHub-Release erstellen
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/solar-cards.js
+          generate_release_notes: true
