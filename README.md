@@ -64,6 +64,21 @@ z. B. mehrere Wechselrichter/Strings) — dafür `entity_2`…`entity_5` und
 Diagrammhöhe, Strompreis) lassen sich bequem über den visuellen Editor setzen
 (Karte hinzufügen → kein YAML nötig).
 
+![PV Energy Diagram: Akku-Tab mit Lade-/Entladebalken und Ladestand-Linie](images/pv-energy-diagram-akku.png)
+
+Der zweite Tab-Slot ist fest für den Akku reserviert: Statt einer einzelnen
+Entität werden hier drei Sensor-Rollen konfiguriert (geladene/entladene
+Energie in kWh sowie Ladestand in %). In der Tagesansicht zeigt eine
+durchgezogene Linie zusätzlich den Ladestandsverlauf auf einer eigenen
+0–100 %-Skala.
+
+```yaml
+entity_2_charge: sensor.akku_geladen
+entity_2_discharge: sensor.akku_entladen
+entity_2_soc: sensor.akku_ladestand
+name_2: Akku
+```
+
 ## PV Energy Flow Card
 
 <p>
@@ -106,26 +121,18 @@ soc_entity: sensor.akku_ladestand
 charge_power_entity: sensor.akku_ladeleistung
 discharge_power_entity: sensor.akku_entladeleistung
 battery_capacity_kwh: 3.2
-```
-
-Für die Ladezeit-Prognose gibt es keinen fertigen "Hausverbrauch"-Sensor,
-sondern die Grundlast wird aus drei weiteren Momentanleistungssensoren live
-berechnet (PV-Erzeugung + Netzbezug − Netzeinspeisung − Batterieleistung),
-gemittelt über die letzten 3 Stunden, um kurze Verbrauchsspitzen wegzumitteln.
-Ohne diese drei optionalen Felder zeigt die Karte nur Ladestand und Leistung,
-ohne Ladezeit-Zeile:
-
-```yaml
-type: custom:pv-battery-card
-title: Akkustand
-soc_entity: sensor.akku_ladestand
-charge_power_entity: sensor.akku_ladeleistung
-discharge_power_entity: sensor.akku_entladeleistung
-battery_capacity_kwh: 3.2
+# Optional, für die Ladezeit-Prognose (siehe unten):
 pv_power_entity: sensor.pv_erzeugung_leistung
 grid_import_power_entity: sensor.netzbezug_leistung
 grid_export_power_entity: sensor.netzeinspeisung_leistung
 ```
+
+Für die Ladezeit-Prognose gibt es keinen fertigen "Hausverbrauch"-Sensor,
+sondern die Grundlast wird aus den drei optionalen Momentanleistungssensoren
+oben live berechnet (PV-Erzeugung + Netzbezug − Netzeinspeisung −
+Batterieleistung), gemittelt über die letzten 3 Stunden, um kurze
+Verbrauchsspitzen wegzumitteln. Fehlt eines der drei Felder, zeigt die Karte
+nur Ladestand und Leistung, ohne Ladezeit-Zeile.
 
 ## Entwicklung
 
