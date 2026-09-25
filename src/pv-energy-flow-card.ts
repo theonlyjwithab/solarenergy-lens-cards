@@ -387,6 +387,15 @@ export class PvEnergyFlowCard extends LitElement {
         font-weight: 600;
         fill: var(--primary-text-color);
       }
+      .efc-surface {
+        filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
+      }
+      .efc-ring-segment {
+        transition: stroke-dasharray 0.3s ease;
+      }
+      .efc-flow-dot {
+        filter: drop-shadow(0 0 3px currentColor);
+      }
     `,
   ];
 }
