@@ -1,6 +1,6 @@
 # Solar & Energiefluss Cards
 
-Zwei eigenständige Lovelace-Karten für Home Assistant rund um eine Solaranlage
+Drei eigenständige Lovelace-Karten für Home Assistant rund um eine Solaranlage
 (entwickelt für einen Anker Solix Pro 2, funktioniert aber mit jedem Setup, das
 passende Energie-Sensoren liefert):
 
@@ -8,8 +8,10 @@ passende Energie-Sensoren liefert):
   mit Navigation, Prognoselinie, Tooltips und optionaler Kostenanzeige.
 - **PV Energy Flow Card** — zeigt, woher der Hausbedarf kommt (PV direkt / Speicher / Netz)
   als kombiniertes Ring- und Sankey-Diagramm, plus optionalem Kosten/Gespart-Tab.
+- **PV Battery Card** — Akkustand als Batterie-Symbol mit Farbverlauf, aktueller
+  Lade-/Entladeleistung und einer Prognose, wann der Akku voraussichtlich voll ist.
 
-Beide Karten holen ihre Daten unabhängig voneinander direkt per Websocket
+Alle drei Karten holen ihre Daten unabhängig voneinander direkt per Websocket
 (`recorder/statistics_during_period`, `energy/solar_forecast`) — sie nutzen **nicht**
 die gemeinsame Energy-Dashboard-Datumsauswahl, mehrere Karteninstanzen auf einem
 Dashboard beeinflussen sich also nicht gegenseitig.
@@ -87,6 +89,43 @@ Der PV-Direktverbrauch wird automatisch berechnet
 (PV-Erzeugung − Batterie-Laden − Netzeinspeisung) — dafür ist kein eigener Sensor nötig.
 Mit einem hinterlegten Strompreis (`price_per_kwh`, im visuellen Editor einstellbar)
 erscheint zusätzlich der oben gezeigte "Kosten"-Tab.
+
+## PV Battery Card
+
+![PV Battery Card: Batteriesymbol mit Ladestand, Leistungsanzeige und Ladezeit-Prognose](images/pv-battery-card.png)
+
+Zeigt den Akkustand als Batterie-Symbol, dessen Füllfarbe stufenlos zwischen
+Rot (0 %), Orange (50 %) und Grün (100 %) verläuft. Darunter die aktuelle
+Lade-/Entladeleistung (↑/↓ mit Watt-Wert, oder "Im Ruhezustand" bei sehr
+kleinen Werten) sowie eine Prognose, wann der Akku voraussichtlich voll ist.
+
+```yaml
+type: custom:pv-battery-card
+title: Akkustand
+soc_entity: sensor.akku_ladestand
+charge_power_entity: sensor.akku_ladeleistung
+discharge_power_entity: sensor.akku_entladeleistung
+battery_capacity_kwh: 3.2
+```
+
+Für die Ladezeit-Prognose gibt es keinen fertigen "Hausverbrauch"-Sensor,
+sondern die Grundlast wird aus drei weiteren Momentanleistungssensoren live
+berechnet (PV-Erzeugung + Netzbezug − Netzeinspeisung − Batterieleistung),
+gemittelt über die letzten 3 Stunden, um kurze Verbrauchsspitzen wegzumitteln.
+Ohne diese drei optionalen Felder zeigt die Karte nur Ladestand und Leistung,
+ohne Ladezeit-Zeile:
+
+```yaml
+type: custom:pv-battery-card
+title: Akkustand
+soc_entity: sensor.akku_ladestand
+charge_power_entity: sensor.akku_ladeleistung
+discharge_power_entity: sensor.akku_entladeleistung
+battery_capacity_kwh: 3.2
+pv_power_entity: sensor.pv_erzeugung_leistung
+grid_import_power_entity: sensor.netzbezug_leistung
+grid_export_power_entity: sensor.netzeinspeisung_leistung
+```
 
 ## Entwicklung
 
