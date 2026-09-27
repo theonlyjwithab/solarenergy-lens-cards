@@ -2,6 +2,7 @@ import type { Period } from '../types';
 import type { StatBar } from '../data/statistics';
 import type { DateRange } from './time';
 import { getZonedDayBounds } from './time';
+import { resolveLang, t } from '../i18n';
 
 /** Formatiert den aktuell angezeigten Zeitraum für die Kopfzeile, z. B. "September 2026". */
 export function formatRangeLabel(period: Period, range: DateRange, locale: string, timeZone: string): string {
@@ -69,15 +70,26 @@ export function formatBarLabels(period: Period, bars: StatBar[], locale: string,
  * Wochentag (z. B. falls die Prognose bis in die Nacht/den nächsten Tag reicht).
  */
 export function formatEstimatedTimeLabel(date: Date, now: Date, locale: string, timeZone: string): string {
+  const lang = resolveLang(locale);
   const today = getZonedDayBounds(now, timeZone);
   const timeFormat = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone });
 
   if (date >= today.start && date < today.end) {
-    return `${timeFormat.format(date)} Uhr`;
+    return t(lang, 'time_suffix_hour', { time: timeFormat.format(date) });
   }
 
   const weekdayFormat = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone });
-  return `${weekdayFormat.format(date)}, ${timeFormat.format(date)} Uhr`;
+  return `${weekdayFormat.format(date)}, ${t(lang, 'time_suffix_hour', { time: timeFormat.format(date) })}`;
+}
+
+/** Monat+Jahr-Label für die Amortisations-Karte (Fließtext), z. B. "Juni 2029". */
+export function formatMonthYearLabel(date: Date, locale: string, timeZone: string): string {
+  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone }).format(date);
+}
+
+/** Kürzeres Monat+Jahr-Label für die schmalen Achsenbeschriftungen im Verlaufsdiagramm, z. B. "Jun 2029". */
+export function formatMonthYearShortLabel(date: Date, locale: string, timeZone: string): string {
+  return new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric', timeZone }).format(date);
 }
 
 /** Volle Beschreibung eines einzelnen Balkens für den Tooltip, z. B. "12:00 – 13:00". */

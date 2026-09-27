@@ -7,6 +7,7 @@ import { fetchAverageBaseLoadKw } from './data/base-load';
 import { estimateFullTime } from './utils/charge-estimate';
 import { formatEstimatedTimeLabel } from './utils/format';
 import './pv-battery-card-editor';
+import { resolveLang, t } from './i18n';
 
 // Wie oft die Ladezeit-Prognose (Solarprognose + Grundlast-Mittelwert)
 // höchstens neu geholt wird. Häufiger nachzufragen brächte kaum bessere
@@ -28,15 +29,16 @@ const POWER_IDLE_THRESHOLD = 5;
 
 /** Netto-Leistung (Ladeleistung − Entladeleistung) als Pfeil + Text. */
 function renderPowerFlow(netPower: number, locale: string) {
+  const lang = resolveLang(locale);
   const format = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
 
   if (Math.abs(netPower) < POWER_IDLE_THRESHOLD) {
-    return html`<span class="power-flow idle">Im Ruhezustand</span>`;
+    return html`<span class="power-flow idle">${t(lang, 'idle_state')}</span>`;
   }
   if (netPower > 0) {
-    return html`<span class="power-flow charging"><span class="power-arrow">↑</span> ${format.format(netPower)} W lädt</span>`;
+    return html`<span class="power-flow charging"><span class="power-arrow">↑</span> ${t(lang, 'charging_suffix', { value: format.format(netPower) })}</span>`;
   }
-  return html`<span class="power-flow discharging"><span class="power-arrow">↓</span> ${format.format(-netPower)} W entlädt</span>`;
+  return html`<span class="power-flow discharging"><span class="power-arrow">↓</span> ${t(lang, 'discharging_suffix', { value: format.format(-netPower) })}</span>`;
 }
 
 @customElement('pv-battery-card')
@@ -52,7 +54,8 @@ export class PvBatteryCard extends LitElement {
   public setConfig(config: PvBatteryCardConfig): void {
     const missing = REQUIRED_FIELDS.filter((key) => !config[key]);
     if (missing.length > 0) {
-      throw new Error(`Bitte folgende Felder in der Kartenkonfiguration angeben: ${missing.join(', ')}.`);
+      const lang = resolveLang(this.hass?.locale.language);
+      throw new Error(t(lang, 'config_error_missing_fields', { fields: missing.join(', ') }));
     }
     this._config = config;
   }
@@ -139,14 +142,14 @@ export class PvBatteryCard extends LitElement {
     return document.createElement('pv-battery-card-editor');
   }
 
-  public static getStubConfig(): PvBatteryCardConfig {
+  public static getStubConfig(hass?: HomeAssistant): PvBatteryCardConfig {
     // Anders als bei der ersten Karte lässt sich hier keine passende Entität
     // automatisch erraten (Ladestand/Leistung lassen sich nicht am
     // entity_id-Präfix erkennen) – die Karte startet nach dem Hinzufügen mit
     // leeren Pflichtfeldern, die im Editor ausgefüllt werden.
     return {
       type: 'custom:pv-battery-card',
-      title: 'Akkustand',
+      title: t(resolveLang(hass?.locale.language), 'stub_title_battery'),
       soc_entity: '',
       charge_power_entity: '',
       discharge_power_entity: '',
@@ -171,12 +174,13 @@ export class PvBatteryCard extends LitElement {
     const netPower = chargePower - dischargePower;
 
     const locale = this.hass.locale.language;
+    const lang = resolveLang(locale);
     const timeZone = this.hass.config.time_zone;
     const estimateLabel = hasSoc ? this._chargeEstimateLabel(soc, locale, timeZone) : undefined;
 
     return html`
       <ha-card>
-        <div class="title">${this._config.title ?? 'Akkustand'}</div>
+        <div class="title">${this._config.title ?? t(lang, 'stub_title_battery')}</div>
         ${hasSoc
           ? html`
               <div class="battery-row">
@@ -190,7 +194,7 @@ export class PvBatteryCard extends LitElement {
               ${hasPower ? html`<div class="power-row">${renderPowerFlow(netPower, locale)}</div>` : ''}
               ${estimateLabel ? html`<div class="estimate-row">${estimateLabel}</div>` : ''}
             `
-          : html`<div class="message">Keine Daten</div>`}
+          : html`<div class="message">${t(lang, 'no_data')}</div>`}
       </ha-card>
     `;
   }
@@ -200,8 +204,9 @@ export class PvBatteryCard extends LitElement {
     if (!this._config) {
       return undefined;
     }
+    const lang = resolveLang(locale);
     if (soc >= 100) {
-      return 'Akku voll';
+      return t(lang, 'battery_full');
     }
     if (!this._forecast || this._baseLoadKw == null) {
       return undefined;
@@ -210,9 +215,9 @@ export class PvBatteryCard extends LitElement {
     const remainingKwh = (this._config.battery_capacity_kwh * (100 - soc)) / 100;
     const estimate = estimateFullTime(remainingKwh, this._baseLoadKw, this._forecast, new Date());
     if (!estimate) {
-      return 'Kein Aufladen mehr innerhalb der Prognose erwartet';
+      return t(lang, 'no_more_charging_expected');
     }
-    return `Voll ca. ${formatEstimatedTimeLabel(estimate, new Date(), locale, timeZone)}`;
+    return t(lang, 'full_at_prefix', { time: formatEstimatedTimeLabel(estimate, new Date(), locale, timeZone) });
   }
 
   static styles = css`

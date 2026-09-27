@@ -1,5 +1,6 @@
 import { html, svg, type TemplateResult } from 'lit';
 import type { StatBar } from '../data/statistics';
+import { resolveLang, t } from '../i18n';
 
 export const DEFAULT_CHART_HEIGHT = 150;
 
@@ -67,7 +68,8 @@ function buildForecastPath(forecast: Array<number | null>, axisMax: number, barC
 export function renderChart(bars: StatBar[], options: BarChartOptions = {}): TemplateResult {
   const height = options.height ?? DEFAULT_CHART_HEIGHT;
   const barColor = options.barColor ?? 'var(--primary-color)';
-  const locale = options.locale ?? 'de';
+  const locale = options.locale ?? 'en';
+  const lang = resolveLang(locale);
   const labels = options.labels ?? bars.map(() => '');
   const tooltipLabels = options.tooltipLabels ?? bars.map(() => '');
   const forecast = options.forecast;
@@ -131,18 +133,18 @@ export function renderChart(bars: StatBar[], options: BarChartOptions = {}): Tem
                         <div class="tooltip-title">${tooltipLabels[index]}</div>
                         <div class="tooltip-row">
                           <span class="tooltip-dot" style="background: ${barColor};"></span>
-                          Erzeugung: ${numberFormat.format(bar.value)} kWh
+                          ${t(lang, 'tooltip_generation')}: ${numberFormat.format(bar.value)} kWh
                         </div>
                         ${hoveredForecast !== null
                           ? html`
                               <div class="tooltip-row">
                                 <span class="tooltip-dot forecast"></span>
-                                Vorhersage: ${numberFormat.format(hoveredForecast)} kWh
+                                ${t(lang, 'tooltip_forecast')}: ${numberFormat.format(hoveredForecast)} kWh
                               </div>
                             `
                           : ''}
                         ${pricePerKwh != null
-                          ? html`<div class="tooltip-row">Kosten: ${costFormat.format(bar.value * pricePerKwh)}</div>`
+                          ? html`<div class="tooltip-row">${t(lang, 'tooltip_cost')}: ${costFormat.format(bar.value * pricePerKwh)}</div>`
                           : ''}
                       </div>
                     `

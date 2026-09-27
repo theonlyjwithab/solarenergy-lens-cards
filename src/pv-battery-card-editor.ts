@@ -1,6 +1,7 @@
 import { LitElement, html, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant, PvBatteryCardConfig } from './types';
+import { resolveLang, t, type Lang } from './i18n';
 
 // Gleiches `ha-form`-Muster wie bei den anderen beiden Karten-Editoren.
 
@@ -25,16 +26,18 @@ const SCHEMA = [
   { name: 'grid_export_power_entity', selector: { entity: { domain: 'sensor' } } },
 ];
 
-const LABELS: Record<string, string> = {
-  title: 'Titel',
-  soc_entity: 'Ladestand (%)',
-  charge_power_entity: 'Ladeleistung (W)',
-  discharge_power_entity: 'Entladeleistung (W)',
-  battery_capacity_kwh: 'Batteriekapazität (kWh)',
-  pv_power_entity: 'PV-Erzeugungsleistung (W, optional – für Ladezeit-Prognose)',
-  grid_import_power_entity: 'Netzbezug-Leistung (W, optional – für Ladezeit-Prognose)',
-  grid_export_power_entity: 'Netzeinspeise-Leistung (W, optional – für Ladezeit-Prognose)',
-};
+function getLabels(lang: Lang): Record<string, string> {
+  return {
+    title: t(lang, 'label_title'),
+    soc_entity: t(lang, 'label_soc_entity'),
+    charge_power_entity: t(lang, 'label_charge_power_entity'),
+    discharge_power_entity: t(lang, 'label_discharge_power_entity'),
+    battery_capacity_kwh: t(lang, 'label_battery_capacity'),
+    pv_power_entity: t(lang, 'label_pv_power_forecast'),
+    grid_import_power_entity: t(lang, 'label_grid_import_power_forecast'),
+    grid_export_power_entity: t(lang, 'label_grid_export_power_forecast'),
+  };
+}
 
 interface HaFormValueChangedDetail {
   value: PvBatteryCardConfig;
@@ -50,7 +53,10 @@ export class PvBatteryCardEditor extends LitElement {
     this._config = config;
   }
 
-  private _computeLabel = (schema: { name: string }): string => LABELS[schema.name] ?? schema.name;
+  private _computeLabel = (schema: { name: string }): string => {
+    const labels = getLabels(resolveLang(this.hass?.locale.language));
+    return labels[schema.name] ?? schema.name;
+  };
 
   private _valueChanged(ev: CustomEvent<HaFormValueChangedDetail>): void {
     ev.stopPropagation();

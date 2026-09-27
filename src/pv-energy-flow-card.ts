@@ -16,6 +16,7 @@ import {
   type LiveFlow,
 } from './chart/energy-flow';
 import './pv-energy-flow-card-editor';
+import { resolveLang, t } from './i18n';
 
 const REQUIRED_ENTITY_FIELDS = [
   'pv_entity',
@@ -48,7 +49,8 @@ export class PvEnergyFlowCard extends LitElement {
   public setConfig(config: PvEnergyFlowCardConfig): void {
     const missing = REQUIRED_ENTITY_FIELDS.filter((key) => !config[key]);
     if (missing.length > 0) {
-      throw new Error(`Bitte folgende Entitäten in der Kartenkonfiguration angeben: ${missing.join(', ')}.`);
+      const lang = resolveLang(this.hass?.locale.language);
+      throw new Error(t(lang, 'config_error_missing_entities', { fields: missing.join(', ') }));
     }
     // Der Standard-Zeitraum soll nur beim allerersten Laden der Karte gelten,
     // nicht bei jeder späteren Config-Änderung den navigierten Zeitraum zurücksetzen.
@@ -67,7 +69,7 @@ export class PvEnergyFlowCard extends LitElement {
     return document.createElement('pv-energy-flow-card-editor');
   }
 
-  public static getStubConfig(): PvEnergyFlowCardConfig {
+  public static getStubConfig(hass?: HomeAssistant): PvEnergyFlowCardConfig {
     // Anders als bei der Solar-Karte lässt sich hier keine passende Entität
     // automatisch erraten – es braucht 5 spezifische Sensoren (PV/Batterie/
     // Netz), die sich nicht anhand des entity_id-Präfixes unterscheiden
@@ -75,7 +77,7 @@ export class PvEnergyFlowCard extends LitElement {
     // Nutzer sie auswählt.
     return {
       type: 'custom:pv-energy-flow-card',
-      title: 'Energiefluss',
+      title: t(resolveLang(hass?.locale.language), 'stub_title_flow'),
       pv_entity: '',
       battery_charge_entity: '',
       battery_discharge_entity: '',
@@ -234,6 +236,7 @@ export class PvEnergyFlowCard extends LitElement {
 
     const timeZone = this.hass.config.time_zone;
     const locale = this.hass.locale.language;
+    const lang = resolveLang(locale);
     const price = this._config.price_per_kwh;
     const costFormat = new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' });
 
@@ -258,24 +261,24 @@ export class PvEnergyFlowCard extends LitElement {
                   class=${this._view === 'flow' ? 'view-tab active' : 'view-tab'}
                   @click=${() => this._selectView('flow')}
                 >
-                  Energiefluss
+                  ${t(lang, 'tab_flow')}
                 </button>
                 <button
                   class=${this._view === 'cost' ? 'view-tab active' : 'view-tab'}
                   @click=${() => this._selectView('cost')}
                 >
-                  Kosten
+                  ${t(lang, 'tab_cost')}
                 </button>
               </div>
             `
           : ''}
 
-        <div class="title">${this._config.title ?? 'Energiefluss'}</div>
+        <div class="title">${this._config.title ?? t(lang, 'stub_title_flow')}</div>
 
         ${this._error
-          ? html`<div class="message error">Fehler: ${this._error}</div>`
+          ? html`<div class="message error">${t(lang, 'error_prefix', { message: this._error })}</div>`
           : this._loading && !this._totals
-            ? html`<div class="message">Lade Daten…</div>`
+            ? html`<div class="message">${t(lang, 'loading')}</div>`
             : this._totals
               ? html`
                   <div class="chart">
@@ -284,13 +287,17 @@ export class PvEnergyFlowCard extends LitElement {
                       style="width: 100%; height: auto; display: block;"
                     >
                       ${this._view === 'cost' && price != null
-                        ? renderEnergyFlowContent(scaleEnergyFlowTotals(this._totals, price), (value) =>
-                            costFormat.format(value),
+                        ? renderEnergyFlowContent(
+                            scaleEnergyFlowTotals(this._totals, price),
+                            (value) => costFormat.format(value),
+                            undefined,
+                            locale,
                           )
                         : renderEnergyFlowContent(
                             this._totals,
                             (value) => formatKwh(value, locale),
                             this._liveFlow ? { flow: this._liveFlow, format: (value) => formatWatts(value, locale) } : undefined,
+                            locale,
                           )}
                     </svg>
                   </div>

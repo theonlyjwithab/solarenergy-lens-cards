@@ -1,9 +1,9 @@
 {
   "name": "solarcards",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Zwei Home-Assistant-Lovelace-Karten für Solaranlagen: Solarerzeugung als Balkendiagramm mit Prognose (PV Energy Diagram) und Energiefluss (PV/Speicher/Netz) als Ring-/Sankey-Diagramm (PV Energy Flow Card), inkl. optionaler Kostenanzeige.",
+  "description": "Four Home Assistant Lovelace cards for solar setups: solar generation as a bar chart with forecast (PV Energy Diagram), energy flow (PV/battery/grid) as a ring/Sankey diagram (PV Energy Flow Card), battery state of charge with a charge-time forecast (PV Battery Card), and payback progress with a savings-over-time chart (PV Payback Card) — all with optional cost display.",
   "scripts": {
     "dev": "vite build --watch --mode development",
     "serve": "http-server dist --port 5000 --cors -c-1",

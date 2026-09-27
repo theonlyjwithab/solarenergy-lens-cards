@@ -1,6 +1,7 @@
 import { html, svg, type TemplateResult } from 'lit';
 import type { StatBar } from '../data/statistics';
 import { computeNiceStep } from './bar-chart';
+import { resolveLang, t } from '../i18n';
 
 export const DEFAULT_CHART_HEIGHT = 150;
 // Als Konstanten statt nur inline in renderBatteryChart(), damit die Kartenkopfzeile
@@ -59,7 +60,8 @@ export function renderBatteryChart(
   options: BatteryChartOptions = {},
 ): TemplateResult {
   const height = options.height ?? DEFAULT_CHART_HEIGHT;
-  const locale = options.locale ?? 'de';
+  const locale = options.locale ?? 'en';
+  const lang = resolveLang(locale);
   const chargeColor = options.chargeColor ?? DEFAULT_CHARGE_COLOR;
   const dischargeColor = options.dischargeColor ?? DEFAULT_DISCHARGE_COLOR;
   const barCount = Math.max(chargeBars.length, dischargeBars.length);
@@ -121,14 +123,14 @@ export function renderBatteryChart(
                         <div class="tooltip-title">${tooltipLabels[index]}</div>
                         <div class="tooltip-row">
                           <span class="tooltip-dot" style="background: ${chargeColor};"></span>
-                          Geladen: ${numberFormat.format(chargeValue)} kWh
+                          ${t(lang, 'tooltip_charged')}: ${numberFormat.format(chargeValue)} kWh
                         </div>
                         <div class="tooltip-row">
                           <span class="tooltip-dot" style="background: ${dischargeColor};"></span>
-                          Entladen: ${numberFormat.format(dischargeValue)} kWh
+                          ${t(lang, 'tooltip_discharged')}: ${numberFormat.format(dischargeValue)} kWh
                         </div>
                         ${hoveredSoc !== null
-                          ? html`<div class="tooltip-row">Ladestand: ${numberFormat.format(hoveredSoc)} %</div>`
+                          ? html`<div class="tooltip-row">${t(lang, 'tooltip_soc')}: ${numberFormat.format(hoveredSoc)} %</div>`
                           : ''}
                       </div>
                     `

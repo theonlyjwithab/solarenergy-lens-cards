@@ -92,6 +92,35 @@ export interface PvBatteryCardConfig {
   grid_export_power_entity?: string;
 }
 
+export interface PvPaybackCardConfig {
+  type: string;
+  title?: string;
+  /** PV-Erzeugung gesamt (kWh, total_increasing). */
+  pv_entity: string;
+  /** In die Batterie geladene Energie (kWh). */
+  battery_charge_entity: string;
+  /** Aus der Batterie entladene Energie (kWh). */
+  battery_discharge_entity: string;
+  /** Aus dem Netz bezogene Energie (kWh). */
+  grid_import_entity: string;
+  /** Ins Netz eingespeiste Energie (kWh). */
+  grid_export_entity: string;
+  /** Strompreis in €/kWh – Grundlage für die Ersparnis-Berechnung. */
+  price_per_kwh: number;
+  /** Anschaffungskosten des Balkonkraftwerks in €. */
+  investment_cost: number;
+  /** Datum der Inbetriebnahme (ISO, z. B. "2026-03-01") – Start der kumulierten Ersparnis-Summe. */
+  install_date: string;
+  /**
+   * Manuell erfasste Ersparnis (€) von vor Beginn der Sensor-Aufzeichnung –
+   * z. B. weil das Balkonkraftwerk schon vor dem Einrichten der Karte/Sensoren
+   * lief. Wird auf die aus den Statistiken berechnete Summe addiert, da
+   * `recorder/statistics_during_period` nur Daten ab Sensor-Erstellung liefert,
+   * unabhängig vom hier gesetzten `install_date`. Standard: 0.
+   */
+  initial_saved_offset?: number;
+}
+
 export interface PvEnergyFlowCardConfig {
   type: string;
   title?: string;

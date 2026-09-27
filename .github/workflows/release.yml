@@ -33,8 +33,20 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Nutzt die Nachricht eines annotierten Tags (git tag -a v1.0.0 -m "…") als
+      # Release-Beschreibung, damit die Notes nicht nur aus dem automatisch
+      # generierten Commit-Log bestehen. Bei einem leichten Tag ist die Nachricht
+      # leer, dann bleibt nur der Auto-Changelog übrig (kein Fehler).
+      - name: Tag-Nachricht auslesen
+        id: tag
+        run: |
+          echo "message<<EOF" >> "$GITHUB_OUTPUT"
+          git tag -l --format='%(contents)' "${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: GitHub-Release erstellen
         uses: softprops/action-gh-release@v2
         with:
           files: dist/solar-cards.js
+          body: ${{ steps.tag.outputs.message }}
           generate_release_notes: true

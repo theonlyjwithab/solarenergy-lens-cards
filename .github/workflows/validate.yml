@@ -1,0 +1,22 @@
+name: Validate
+
+# Runs the official HACS validation action on every push/PR and once a day.
+# Must pass for the repository to be eligible for the HACS default store.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: HACS validation
+        uses: hacs/action@main
+        with:
+          category: plugin

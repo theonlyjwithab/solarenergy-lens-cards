@@ -5,12 +5,20 @@ import { fetchStatistics, fetchMeanStatistics, padHourlyBars, type StatBar } fro
 import { fetchSolarForecast, alignForecastToBars } from './data/forecast';
 import { getRangeForPeriod, shiftReferenceDate, RECORDER_PERIOD } from './utils/period';
 import { formatBarLabels, formatBarTooltipLabel } from './utils/format';
-import { renderChart } from './chart/bar-chart';
+import { renderChart, DEFAULT_CHART_HEIGHT } from './chart/bar-chart';
 import { renderBatteryChart, DEFAULT_CHARGE_COLOR, DEFAULT_DISCHARGE_COLOR } from './chart/battery-chart';
 import type { DateRange } from './utils/time';
 import { migrateConfig, getSlots, type Slot, type BatterySlot } from './utils/entities';
 import { renderPeriodHeader, periodHeaderStyles, ALL_PERIODS } from './components/period-header';
 import './pv-energy-diagram-editor';
+import { resolveLang, t } from './i18n';
+
+/** Zusätzliche Höhe unterhalb der eigentlichen Balken (x-Achsen-Beschriftung
+ * + deren Abstand), identisch für Entity- und Akku-Chart. Zusammen mit der
+ * konfigurierten Balkenhöhe ergibt das die feste Gesamthöhe des Chart-
+ * Bereichs – verhindert, dass die Karte beim Tab-Wechsel oder während
+ * "Lade Daten…" kurz zusammenschrumpft (siehe `_chartAreaHeight`). */
+const CHART_AXIS_HEIGHT = 24;
 
 /** Ordnet eine Momentanwert-Serie (z. B. Ladestand %) den Zeitfenstern einer Balkenreihe zu; `null` bei fehlendem Wert. */
 function alignMeanToBars(bars: StatBar[], series: StatBar[]): Array<number | null> {
@@ -40,7 +48,7 @@ export class PvEnergyDiagram extends LitElement {
   public setConfig(config: PvEnergyDiagramConfig): void {
     const migrated = migrateConfig(config);
     if (getSlots(migrated).length === 0) {
-      throw new Error('Bitte mindestens eine Entität in der Kartenkonfiguration angeben.');
+      throw new Error(t(resolveLang(this.hass?.locale.language), 'config_error_at_least_one_entity'));
     }
     // Der Standard-Zeitraum soll nur beim allerersten Laden der Karte gelten,
     // nicht bei jeder späteren Config-Änderung (z. B. während man im Editor
@@ -59,12 +67,12 @@ export class PvEnergyDiagram extends LitElement {
     return document.createElement('pv-energy-diagram-editor');
   }
 
-  public static getStubConfig(_hass: HomeAssistant, entities: string[]): PvEnergyDiagramConfig {
+  public static getStubConfig(hass: HomeAssistant, entities: string[]): PvEnergyDiagramConfig {
     const entity = entities.find((entityId) => entityId.startsWith('sensor.')) ?? '';
     return {
       type: 'custom:pv-energy-diagram',
       entity_1: entity,
-      title: 'Solar',
+      title: t(resolveLang(hass?.locale.language), 'stub_title_solar'),
     };
   }
 
@@ -246,6 +254,15 @@ export class PvEnergyDiagram extends LitElement {
     }
   }
 
+  /** Feste Höhe des gesamten Chart-Bereichs (Balken + x-Achse), unabhängig
+   * davon, ob gerade Daten geladen werden oder ein Fehler/eine leere
+   * Akku-/Entity-Ansicht angezeigt wird – sonst würde die Karte beim
+   * Tab-Wechsel kurz auf Textzeilenhöhe zusammenschrumpfen und wieder
+   * aufspringen. */
+  private get _chartAreaHeight(): number {
+    return (this._config?.height ?? DEFAULT_CHART_HEIGHT) + CHART_AXIS_HEIGHT;
+  }
+
   private get _total(): number {
     return this._bars.reduce((sum, bar) => sum + bar.value, 0);
   }
@@ -276,6 +293,7 @@ export class PvEnergyDiagram extends LitElement {
 
     const timeZone = this.hass.config.time_zone;
     const locale = this.hass.locale.language;
+    const lang = resolveLang(locale);
     const slot = this._currentSlot;
     const isBattery = slot.kind === 'battery';
 
@@ -317,7 +335,7 @@ export class PvEnergyDiagram extends LitElement {
                       class=${index === this._selectedEntityIndex ? 'entity-tab active' : 'entity-tab'}
                       @click=${() => this._selectEntity(index)}
                     >
-                      ${tabSlot.name || (tabSlot.kind === 'entity' ? tabSlot.entity : 'Akku')}
+                      ${tabSlot.name || (tabSlot.kind === 'entity' ? tabSlot.entity : t(lang, 'tab_battery_fallback'))}
                     </button>
                   `,
                 )}
@@ -330,9 +348,9 @@ export class PvEnergyDiagram extends LitElement {
           ? html`
               <div class="total">
                 <span class="legend-dot" style="background: ${DEFAULT_CHARGE_COLOR};"></span>
-                Geladen: ${numberFormat.format(this._chargeBars.reduce((sum, bar) => sum + bar.value, 0))} kWh
+                ${t(lang, 'total_charged', { value: numberFormat.format(this._chargeBars.reduce((sum, bar) => sum + bar.value, 0)) })}
                 <span class="legend-dot" style="background: ${DEFAULT_DISCHARGE_COLOR};"></span>
-                Entladen: ${numberFormat.format(this._dischargeBars.reduce((sum, bar) => sum + bar.value, 0))} kWh
+                ${t(lang, 'total_discharged', { value: numberFormat.format(this._dischargeBars.reduce((sum, bar) => sum + bar.value, 0)) })}
               </div>
             `
           : html`
@@ -342,11 +360,11 @@ export class PvEnergyDiagram extends LitElement {
               </div>
             `}
 
-        <div class="chart">
+        <div class="chart" style="min-height: ${this._chartAreaHeight}px;">
           ${this._error
-            ? html`<div class="message error">Fehler: ${this._error}</div>`
+            ? html`<div class="message error">${t(lang, 'error_prefix', { message: this._error })}</div>`
             : this._loading && !hasData
-              ? html`<div class="message">Lade Daten…</div>`
+              ? html`<div class="message">${t(lang, 'loading')}</div>`
               : html`
                   <div class=${this._loading ? 'chart-content loading' : 'chart-content'}>
                     ${isBattery
@@ -435,6 +453,9 @@ export class PvEnergyDiagram extends LitElement {
     }
     .chart {
       padding: 0 16px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .chart-content {
       transition: opacity 150ms ease;

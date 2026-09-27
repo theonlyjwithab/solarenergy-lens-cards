@@ -1,98 +1,100 @@
-# Solar & Energiefluss Cards
+# SolarEnergy Lens Cards
 
-Drei eigenständige Lovelace-Karten für Home Assistant rund um eine Solaranlage
-(entwickelt für einen Anker Solix Pro 2, funktioniert aber mit jedem Setup, das
-passende Energie-Sensoren liefert):
+Four independent Lovelace cards for Home Assistant built around a solar setup
+(developed for an Anker Solix Pro 2, but works with any setup that provides
+matching energy sensors):
 
-- **PV Energy Diagram** — Solarerzeugung als Balkendiagramm (Tag/Woche/Monat/Jahr),
-  mit Navigation, Prognoselinie, Tooltips und optionaler Kostenanzeige.
-- **PV Energy Flow Card** — zeigt, woher der Hausbedarf kommt (PV direkt / Speicher / Netz)
-  als kombiniertes Ring- und Sankey-Diagramm, plus optionalem Kosten/Gespart-Tab.
-- **PV Battery Card** — Akkustand als Batterie-Symbol mit Farbverlauf, aktueller
-  Lade-/Entladeleistung und einer Prognose, wann der Akku voraussichtlich voll ist.
+- **PV Energy Diagram** — solar generation as a bar chart (day/week/month/year),
+  with navigation, a forecast line, tooltips, and an optional cost display.
+- **PV Energy Flow Card** — shows where household consumption comes from (direct PV /
+  battery / grid) as a combined ring and Sankey diagram, plus an optional cost/savings tab.
+- **PV Battery Card** — battery level as a battery icon with a color gradient, current
+  charge/discharge power, and a forecast for when the battery will be full.
+- **PV Payback Card** — shows how much money your solar setup has saved so far, as a
+  percentage of its purchase cost, plus a savings-over-time chart with a break-even estimate.
 
-Alle drei Karten holen ihre Daten unabhängig voneinander direkt per Websocket
-(`recorder/statistics_during_period`, `energy/solar_forecast`) — sie nutzen **nicht**
-die gemeinsame Energy-Dashboard-Datumsauswahl, mehrere Karteninstanzen auf einem
-Dashboard beeinflussen sich also nicht gegenseitig.
+All four cards fetch their data independently of each other directly via websocket
+(`recorder/statistics_during_period`, `energy/solar_forecast`) — they do **not** use
+the shared Energy dashboard date selection, so multiple card instances on one
+dashboard don't affect each other.
 
-## Voraussetzungen
+## Requirements
 
-- Home Assistant mit aktiviertem `recorder` (Standard) und den benötigten Sensoren
-  als **Langzeitstatistik** (state_class `total_increasing`, üblich bei
-  Energie-Sensoren von Wechselrichtern/Zählern)
-- Für die Prognoselinie der Solar-Karte: eine [Forecast.Solar](https://www.home-assistant.io/integrations/forecast_solar/)-Quelle,
-  im Energie-Dashboard (Einstellungen → Dashboards → Energie) als Solarprognose hinterlegt
+- Home Assistant with `recorder` enabled (default) and the required sensors
+  recorded as **long-term statistics** (state class `total_increasing`, typical for
+  energy sensors on inverters/meters)
+- For the solar card's forecast line: a [Forecast.Solar](https://www.home-assistant.io/integrations/forecast_solar/)
+  source, configured in the Energy dashboard (Settings → Dashboards → Energy) as a solar forecast
 
-## Installation über HACS
+## Installation via HACS
 
-Dieses Repository ist (noch) nicht im HACS-Standardkatalog gelistet und muss als
-**benutzerdefiniertes Repository** hinzugefügt werden:
+This repository is not (yet) listed in the HACS default store and must be added
+as a **custom repository**:
 
-1. HACS öffnen → oben rechts auf die drei Punkte → **Benutzerdefinierte Repositories**
-2. Repository-URL eintragen, Kategorie **Dashboard** auswählen, hinzufügen
-3. "Solar & Energiefluss Cards" in HACS suchen und installieren
-4. Home Assistant neu laden (Browser-Cache ggf. hart leeren)
-5. Falls die Ressource nicht automatisch eingetragen wurde: Einstellungen →
-   Dashboards → oben rechts drei Punkte → Ressourcen → hinzufügen:
-   `/hacsfiles/<Repo-Name>/solar-cards.js`, Typ **JavaScript-Modul**
+1. Open HACS → three dots in the top right → **Custom repositories**
+2. Enter the repository URL, select category **Dashboard**, add it
+3. Search for "SolarEnergy Lens Cards" in HACS and install it
+4. Reload Home Assistant (hard-refresh the browser cache if needed)
+5. If the resource wasn't added automatically: Settings →
+   Dashboards → three dots in the top right → Resources → add:
+   `/hacsfiles/solarenergy-lens-cards/solar-cards.js`, type **JavaScript Module**
 
-## Manuelle Installation (ohne HACS)
+## Manual installation (without HACS)
 
-1. `solar-cards.js` von der [neuesten Release](../../releases/latest) herunterladen
-2. Datei nach `<config>/www/solar-cards.js` kopieren
-3. Als Ressource einbinden: Einstellungen → Dashboards → ⋮ → Ressourcen → hinzufügen:
-   `/local/solar-cards.js`, Typ **JavaScript-Modul**
+1. Download `solar-cards.js` from the [latest release](../../releases/latest)
+2. Copy the file to `<config>/www/solar-cards.js`
+3. Add it as a resource: Settings → Dashboards → ⋮ → Resources → add:
+   `/local/solar-cards.js`, type **JavaScript Module**
 
 ## PV Energy Diagram
 
-![PV Energy Diagram: Tagesansicht mit Balken, Prognoselinie und Kostenanzeige](images/pv-energy-diagram.png)
+![PV Energy Diagram: day view with bars, forecast line, and cost display](images/pv-energy-diagram.png)
 
-Solarerzeugung als Balkendiagramm mit gestrichelter Prognoselinie (aus
-Forecast.Solar) und optionaler Kostenanzeige neben der Summe.
+Solar generation as a bar chart with a dashed forecast line (from
+Forecast.Solar) and an optional cost display next to the total.
 
 ```yaml
 type: custom:pv-energy-diagram
 title: Solar
 entity_1: sensor.pv_erzeugung_taeglich
-name_1: Erzeugung
+name_1: Generation
 ```
 
-Bis zu 5 Entitäten mit eigenem Namen sind möglich (per Tabs umschaltbar,
-z. B. mehrere Wechselrichter/Strings) — dafür `entity_2`…`entity_5` und
-`name_2`…`name_5` ergänzen. Alle Optionen (Zeiträume, Prognose, Balkenfarbe,
-Diagrammhöhe, Strompreis) lassen sich bequem über den visuellen Editor setzen
-(Karte hinzufügen → kein YAML nötig).
+Up to 5 entities with their own names are supported (switchable via tabs,
+e.g. multiple inverters/strings) — just add `entity_2`…`entity_5` and
+`name_2`…`name_5`. All options (periods, forecast, bar color,
+chart height, electricity price) can be set conveniently via the visual editor
+(add card → no YAML needed).
 
-![PV Energy Diagram: Akku-Tab mit Lade-/Entladebalken und Ladestand-Linie](images/pv-energy-diagram-akku.png)
+![PV Energy Diagram: battery tab with charge/discharge bars and state-of-charge line](images/pv-energy-diagram-akku.png)
 
-Der zweite Tab-Slot ist fest für den Akku reserviert: Statt einer einzelnen
-Entität werden hier drei Sensor-Rollen konfiguriert (geladene/entladene
-Energie in kWh sowie Ladestand in %). In der Tagesansicht zeigt eine
-durchgezogene Linie zusätzlich den Ladestandsverlauf auf einer eigenen
-0–100 %-Skala.
+The second tab slot is reserved for the battery: instead of a single
+entity, three sensor roles are configured here (energy charged/discharged
+in kWh, and state of charge in %). In the day view, a solid
+line additionally shows the state-of-charge trend on its own
+0–100% scale.
 
 ```yaml
 entity_2_charge: sensor.akku_geladen
 entity_2_discharge: sensor.akku_entladen
 entity_2_soc: sensor.akku_ladestand
-name_2: Akku
+name_2: Battery
 ```
 
 ## PV Energy Flow Card
 
 <p>
-  <img src="images/pv-energy-flow-card.png" alt="PV Energy Flow Card: Energiefluss-Ansicht mit Ring- und Sankey-Diagramm" width="45%">
-  <img src="images/pv-energy-flow-card-kosten.png" alt="PV Energy Flow Card: Kosten-Ansicht mit denselben Werten in Euro" width="45%">
+  <img src="images/pv-energy-flow-card.png" alt="PV Energy Flow Card: energy flow view with ring and Sankey diagram" width="45%">
+  <img src="images/pv-energy-flow-card-kosten.png" alt="PV Energy Flow Card: cost view with the same values in euros" width="45%">
 </p>
 
-Zeigt, woher der Hausbedarf kommt (PV direkt / Speicher / Netz) als
-kombiniertes Ring- und Sankey-Diagramm (links). Der zweite Tab "Kosten"
-(rechts) zeigt exakt dieselbe Grafik, nur mit €- statt kWh-Werten.
+Shows where household consumption comes from (direct PV / battery / grid) as a
+combined ring and Sankey diagram (left). The second "Cost" tab
+(right) shows the exact same graphic, just with €- instead of kWh-values.
 
 ```yaml
 type: custom:pv-energy-flow-card
-title: Energiefluss
+title: Energy Flow
 pv_entity: sensor.pv_erzeugung
 battery_charge_entity: sensor.batterie_laden
 battery_discharge_entity: sensor.batterie_entladen
@@ -100,62 +102,99 @@ grid_import_entity: sensor.netzbezug
 grid_export_entity: sensor.netzeinspeisung
 ```
 
-Der PV-Direktverbrauch wird automatisch berechnet
-(PV-Erzeugung − Batterie-Laden − Netzeinspeisung) — dafür ist kein eigener Sensor nötig.
-Mit einem hinterlegten Strompreis (`price_per_kwh`, im visuellen Editor einstellbar)
-erscheint zusätzlich der oben gezeigte "Kosten"-Tab.
+Direct PV consumption is calculated automatically
+(PV generation − battery charge − grid export) — no separate sensor is needed.
+With an electricity price configured (`price_per_kwh`, settable via the visual editor),
+the "Cost" tab shown above also appears.
 
 ## PV Battery Card
 
-![PV Battery Card: Batteriesymbol mit Ladestand, Leistungsanzeige und Ladezeit-Prognose](images/pv-battery-card.png)
+![PV Battery Card: battery icon with state of charge, power display, and charge-time forecast](images/pv-battery-card.png)
 
-Zeigt den Akkustand als Batterie-Symbol, dessen Füllfarbe stufenlos zwischen
-Rot (0 %), Orange (50 %) und Grün (100 %) verläuft. Darunter die aktuelle
-Lade-/Entladeleistung (↑/↓ mit Watt-Wert, oder "Im Ruhezustand" bei sehr
-kleinen Werten) sowie eine Prognose, wann der Akku voraussichtlich voll ist.
+Shows the battery level as a battery icon whose fill color transitions smoothly
+between red (0%), orange (50%), and green (100%). Below that, the current
+charge/discharge power (↑/↓ with a watt value, or "Idle" for very
+small values), plus a forecast for when the battery is expected to be full.
 
 ```yaml
 type: custom:pv-battery-card
-title: Akkustand
+title: Battery
 soc_entity: sensor.akku_ladestand
 charge_power_entity: sensor.akku_ladeleistung
 discharge_power_entity: sensor.akku_entladeleistung
 battery_capacity_kwh: 3.2
-# Optional, für die Ladezeit-Prognose (siehe unten):
+# Optional, for the charge-time forecast (see below):
 pv_power_entity: sensor.pv_erzeugung_leistung
 grid_import_power_entity: sensor.netzbezug_leistung
 grid_export_power_entity: sensor.netzeinspeisung_leistung
 ```
 
-Für die Ladezeit-Prognose gibt es keinen fertigen "Hausverbrauch"-Sensor,
-sondern die Grundlast wird aus den drei optionalen Momentanleistungssensoren
-oben live berechnet (PV-Erzeugung + Netzbezug − Netzeinspeisung −
-Batterieleistung), gemittelt über die letzten 3 Stunden, um kurze
-Verbrauchsspitzen wegzumitteln. Fehlt eines der drei Felder, zeigt die Karte
-nur Ladestand und Leistung, ohne Ladezeit-Zeile.
+There's no ready-made "household consumption" sensor for the charge-time
+forecast, so the baseline load is calculated live from the three optional
+instantaneous power sensors above (PV generation + grid import − grid export −
+battery power), averaged over the last 3 hours to smooth out short
+consumption spikes. If one of the three fields is missing, the card shows
+only state of charge and power, without the charge-time line.
 
-## Entwicklung
+## PV Payback Card
+
+Shows how much of your solar setup's purchase cost has already been paid back
+through savings, as a percentage plus a progress bar, and a chart of cumulative
+savings over time — solid up to today, dashed as a projection to the estimated
+break-even date. Once paid off, the card switches to showing "Paid off since …"
+instead of a projection.
+
+```yaml
+type: custom:pv-payback-card
+title: Payback
+pv_entity: sensor.pv_erzeugung
+battery_charge_entity: sensor.batterie_laden
+battery_discharge_entity: sensor.batterie_entladen
+grid_import_entity: sensor.netzbezug
+grid_export_entity: sensor.netzeinspeisung
+price_per_kwh: 0.30
+investment_cost: 2450
+install_date: "2026-03-01"
+# Optional: savings from before the sensors/card were set up, added on top
+# of the calculated total (see below):
+initial_saved_offset: 0
+```
+
+Savings are calculated as `(direct PV consumption + battery discharge) × price_per_kwh`,
+accumulated from `install_date` onward — the same formula as the Energy Flow
+Card's cost tab, just summed over the setup's entire lifetime instead of a
+navigable period. The break-even projection uses the rolling **last 12
+months** of savings as the yearly rate once that much data is available (this
+accounts for summer/winter differences); before that, it falls back to a
+rough lifetime average, marked with a "~" prefix and a note.
+
+Since `recorder/statistics_during_period` only has data from whenever a
+sensor was first created in Home Assistant — not from your actual purchase
+date — set `initial_saved_offset` if the card is set up later than the real
+purchase, to manually account for savings from before sensor tracking started.
+
+## Development
 
 ```bash
 npm install
-npm run start   # baut im Watch-Modus und startet einen lokalen Server für dist/
+npm run start   # builds in watch mode and starts a local server for dist/
 ```
 
-Die gebaute Datei liegt danach unter `dist/solar-cards.js` und ist per lokalem Server
-unter `http://<dein-rechner>:5000/solar-cards.js` erreichbar (als HA-Ressource vom Typ
-„JavaScript-Modul" einbinden).
+The built file then lives at `dist/solar-cards.js` and is reachable via the local
+server at `http://<your-machine>:5000/solar-cards.js` (add it as an HA resource of
+type "JavaScript Module").
 
 ```bash
-npm run build   # einmaliger Produktions-Build
+npm run build   # one-off production build
 npm run lint    # ESLint
 ```
 
-## Release erstellen
+## Creating a release
 
-Ein Tag im Format `v*` (z. B. `v1.0.0`) pushen — eine GitHub Action baut die Karten
-automatisch und veröffentlicht `solar-cards.js` als Anhang eines neuen GitHub-Release,
-das HACS anschließend zum Download anbietet.
+Push a tag in the format `v*` (e.g. `v1.0.0`) — a GitHub Action automatically
+builds the cards and publishes `solar-cards.js` as an attachment of a new GitHub
+release, which HACS then offers for download.
 
-## Lizenz
+## License
 
 [MIT](LICENSE)

@@ -1,4 +1,5 @@
 import { svg, nothing, type SVGTemplateResult } from 'lit';
+import { resolveLang, t } from '../i18n';
 
 export interface EnergyFlowTotals {
   pv: number;
@@ -145,7 +146,9 @@ export function renderEnergyFlowContent(
   totals: EnergyFlowTotals,
   formatValue: (value: number) => string,
   live?: { flow: LiveFlow; format: (value: number) => string },
+  locale = 'en',
 ): SVGTemplateResult {
+  const lang = resolveLang(locale);
   const { pv, charge, discharge, gridImport, gridExport, pvDirect, hausbedarf } = totals;
 
   const maxFlow = Math.max(pvDirect, charge, gridExport, discharge, gridImport, 0.001);
@@ -188,23 +191,23 @@ export function renderEnergyFlowContent(
 
     <rect x="20" y="20" width="280" height="100" rx="10" fill="var(--efc-surface-color)" class="efc-surface" />
     <text x="34" y="44">
-      <tspan class="efc-label">PV</tspan>
-      <tspan class="efc-value" dx="10">${formatValue(pv)} Erzeugung</tspan>
+      <tspan class="efc-label">${t(lang, 'flow_pv')}</tspan>
+      <tspan class="efc-value" dx="10">${formatValue(pv)} ${t(lang, 'flow_generation')}</tspan>
     </text>
-    <text x="85" y="90" text-anchor="middle" class="efc-mini-name">geladen</text>
+    <text x="85" y="90" text-anchor="middle" class="efc-mini-name">${t(lang, 'flow_charged')}</text>
     <text x="85" y="104" text-anchor="middle" class="efc-mini-value">${formatValue(charge)}</text>
-    <text x="160" y="90" text-anchor="middle" class="efc-mini-name">verbraucht</text>
+    <text x="160" y="90" text-anchor="middle" class="efc-mini-name">${t(lang, 'flow_consumed')}</text>
     <text x="160" y="104" text-anchor="middle" class="efc-mini-value">${formatValue(pvDirect)}</text>
-    <text x="235" y="90" text-anchor="middle" class="efc-mini-name">eingespeist</text>
+    <text x="235" y="90" text-anchor="middle" class="efc-mini-name">${t(lang, 'flow_exported')}</text>
     <text x="235" y="104" text-anchor="middle" class="efc-mini-value">${formatValue(gridExport)}</text>
 
     <rect x="20" y="198" width="115" height="56" rx="10" fill="var(--efc-surface-color)" class="efc-surface" />
-    <text x="32" y="220" class="efc-label">Speicher</text>
-    <text x="32" y="238" class="efc-value">entladen ${formatValue(discharge)}</text>
+    <text x="32" y="220" class="efc-label">${t(lang, 'flow_storage')}</text>
+    <text x="32" y="238" class="efc-value">${t(lang, 'flow_discharged', { value: formatValue(discharge) })}</text>
 
     <rect x="185" y="198" width="115" height="56" rx="10" fill="var(--efc-surface-color)" class="efc-surface" />
-    <text x="197" y="220" class="efc-label">Netz</text>
-    <text x="197" y="238" class="efc-value">bezogen ${formatValue(gridImport)}</text>
+    <text x="197" y="220" class="efc-label">${t(lang, 'flow_grid')}</text>
+    <text x="197" y="238" class="efc-value">${t(lang, 'flow_imported', { value: formatValue(gridImport) })}</text>
 
     <rect x="50" y="332" width="220" height="266" rx="10" fill="var(--efc-surface-color)" class="efc-surface" />
     <g transform="translate(160,414) rotate(-90)">
@@ -241,18 +244,18 @@ export function renderEnergyFlowContent(
       />
     </g>
     <text x="160" y="408" text-anchor="middle" class="efc-ring-value">${formatValue(hausbedarf)}</text>
-    <text x="160" y="425" text-anchor="middle" class="efc-ring-label">Hausbedarf</text>
+    <text x="160" y="425" text-anchor="middle" class="efc-ring-label">${t(lang, 'flow_household_demand')}</text>
 
     <circle cx="76" cy="515" r="5" fill="var(--pv-color)" />
-    <text x="88" y="519" class="efc-legend-text">PV-Direktverbrauch</text>
+    <text x="88" y="519" class="efc-legend-text">${t(lang, 'flow_legend_pv_direct')}</text>
     <text x="244" y="519" text-anchor="end" class="efc-legend-value">${Math.round(pctDirect)}%</text>
 
     <circle cx="76" cy="543" r="5" fill="var(--speicher-color)" />
-    <text x="88" y="547" class="efc-legend-text">aus Speicher</text>
+    <text x="88" y="547" class="efc-legend-text">${t(lang, 'flow_legend_from_storage')}</text>
     <text x="244" y="547" text-anchor="end" class="efc-legend-value">${Math.round(pctDischarge)}%</text>
 
     <circle cx="76" cy="571" r="5" fill="var(--netz-color)" />
-    <text x="88" y="575" class="efc-legend-text">aus Netz</text>
+    <text x="88" y="575" class="efc-legend-text">${t(lang, 'flow_legend_from_grid')}</text>
     <text x="244" y="575" text-anchor="end" class="efc-legend-value">${Math.round(pctImport)}%</text>
   `;
 }

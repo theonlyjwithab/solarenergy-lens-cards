@@ -2,14 +2,15 @@ import { html, css, type TemplateResult } from 'lit';
 import type { Period } from '../types';
 import { getRangeForPeriod } from '../utils/period';
 import { formatRangeLabel } from '../utils/format';
+import { resolveLang, t } from '../i18n';
 
 export const ALL_PERIODS: Period[] = ['day', 'week', 'month', 'year'];
 
-const PERIOD_LABELS: Record<Period, string> = {
-  day: 'Tag',
-  week: 'Woche',
-  month: 'Monat',
-  year: 'Jahr',
+const PERIOD_LABEL_KEYS: Record<Period, 'period_day' | 'period_week' | 'period_month' | 'period_year'> = {
+  day: 'period_day',
+  week: 'period_week',
+  month: 'period_month',
+  year: 'period_year',
 };
 
 export interface PeriodHeaderOptions {
@@ -38,13 +39,14 @@ export function renderPeriodHeader(options: PeriodHeaderOptions): TemplateResult
   const nowRange = getRangeForPeriod(period, new Date(), timeZone);
   const isCurrentPeriod = range.start.getTime() === nowRange.start.getTime();
   const label = formatRangeLabel(period, range, locale, timeZone);
+  const lang = resolveLang(locale);
 
   return html`
     <div class="header">
       <div class="nav">
-        <button class="icon-button" @click=${onPrevious} aria-label="Zurück">‹</button>
-        <button class="text-button" @click=${onNow}>Jetzt</button>
-        <button class="icon-button" @click=${onNext} ?disabled=${isCurrentPeriod} aria-label="Vor">›</button>
+        <button class="icon-button" @click=${onPrevious} aria-label=${t(lang, 'nav_back')}>‹</button>
+        <button class="text-button" @click=${onNow}>${t(lang, 'nav_now')}</button>
+        <button class="icon-button" @click=${onNext} ?disabled=${isCurrentPeriod} aria-label=${t(lang, 'nav_forward')}>›</button>
       </div>
       <div class="date-label">${label}</div>
       <select
@@ -52,7 +54,7 @@ export function renderPeriodHeader(options: PeriodHeaderOptions): TemplateResult
         .value=${period}
         @change=${(ev: Event) => onPeriodChange((ev.target as HTMLSelectElement).value as Period)}
       >
-        ${availablePeriods.map((p) => html`<option value=${p}>${PERIOD_LABELS[p]}</option>`)}
+        ${availablePeriods.map((p) => html`<option value=${p}>${t(lang, PERIOD_LABEL_KEYS[p])}</option>`)}
       </select>
     </div>
   `;
