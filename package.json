@@ -1,6 +1,6 @@
 {
   "name": "solarcards",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "Four Home Assistant Lovelace cards for solar setups: solar generation as a bar chart with forecast (PV Energy Diagram), energy flow (PV/battery/grid) as a ring/Sankey diagram (PV Energy Flow Card), battery state of charge with a charge-time forecast (PV Battery Card), and payback progress with a savings-over-time chart (PV Payback Card) — all with optional cost display.",

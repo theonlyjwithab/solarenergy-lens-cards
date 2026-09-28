@@ -346,11 +346,15 @@ export class PvEnergyDiagram extends LitElement {
         ${this._config.title ? html`<div class="title">${this._config.title}</div>` : ''}
         ${isBattery
           ? html`
-              <div class="total">
-                <span class="legend-dot" style="background: ${DEFAULT_CHARGE_COLOR};"></span>
-                ${t(lang, 'total_charged', { value: numberFormat.format(this._chargeBars.reduce((sum, bar) => sum + bar.value, 0)) })}
-                <span class="legend-dot" style="background: ${DEFAULT_DISCHARGE_COLOR};"></span>
-                ${t(lang, 'total_discharged', { value: numberFormat.format(this._dischargeBars.reduce((sum, bar) => sum + bar.value, 0)) })}
+              <div class="total total-battery">
+                <div class="total-row">
+                  <span class="legend-dot" style="background: ${DEFAULT_CHARGE_COLOR};"></span>
+                  ${t(lang, 'total_charged', { value: numberFormat.format(this._chargeBars.reduce((sum, bar) => sum + bar.value, 0)) })}
+                </div>
+                <div class="total-row">
+                  <span class="legend-dot" style="background: ${DEFAULT_DISCHARGE_COLOR};"></span>
+                  ${t(lang, 'total_discharged', { value: numberFormat.format(this._dischargeBars.reduce((sum, bar) => sum + bar.value, 0)) })}
+                </div>
               </div>
             `
           : html`
@@ -431,10 +435,34 @@ export class PvEnergyDiagram extends LitElement {
       color: var(--primary-text-color);
     }
     .total {
-      padding: 4px 16px 8px;
+      box-sizing: border-box;
+      /* Feste (nicht nur minimale) Höhe: Bei min-height allein konnte die
+         zweizeilige Akku-Variante (.total-battery) durch ihr eigenes Padding
+         trotzdem höher werden als die einzeilige Variante – mit einer festen
+         Höhe + vertikal zentriertem Inhalt ist das ausgeschlossen, beide
+         Varianten passen mit Rand hinein, keine kann wachsen. */
+      height: 60px;
+      padding: 0 16px;
       font-size: 1.5rem;
       font-weight: 400;
       color: var(--primary-text-color);
+      display: flex;
+      align-items: center;
+    }
+    .total-battery {
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 2px;
+      font-size: 1.05rem;
+    }
+    .total-row {
+      display: flex;
+      align-items: center;
+      /* Jede Zeile bewusst kurz genug ("Geladen: 12,3 kWh"), um auch auf
+         schmalen Handy-Breiten (~360px) zuverlässig nicht umzubrechen –
+         anders als vorher die eine lange gemeinsame Zeile mit beiden Werten. */
+      white-space: nowrap;
     }
     .cost {
       font-size: 1rem;

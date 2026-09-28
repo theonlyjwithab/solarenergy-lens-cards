@@ -271,7 +271,11 @@ export class PvPaybackCard extends LitElement {
               </svg>
             </div>
           `
-        : ''}
+        : // Für eine Linie braucht es mindestens 2 unterschiedliche Monats-Buckets;
+          // bei einer frisch eingerichteten Anlage (< 1 Monat Historie) gibt es
+          // davon oft nur einen – ohne diesen Hinweis verschwindet der Chart-
+          // Bereich sonst kommentarlos, obwohl die Zahlen oben schon stimmen.
+          html`<div class="chart-box chart-box-empty">${t(lang, 'payback_chart_not_enough_data')}</div>`}
 
       <div class="chips">
         <div class="chip">
@@ -356,6 +360,16 @@ export class PvPaybackCard extends LitElement {
       padding: 10px 8px 2px;
       background: var(--secondary-background-color, #262626);
       border-radius: 12px;
+    }
+    .chart-box-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      padding: 16px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--secondary-text-color);
     }
     .chips {
       display: flex;
